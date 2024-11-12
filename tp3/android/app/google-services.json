@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1019450086083",
+    "project_id": "n6-tp3-projet",
+    "storage_bucket": "n6-tp3-projet.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1019450086083:android:551150b31f10dbbba1c876",
+        "android_client_info": {
+          "package_name": "com.example.tp3"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyATJIYudpKYS23J7j0XA1HiK-cMEHAAN7I"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
