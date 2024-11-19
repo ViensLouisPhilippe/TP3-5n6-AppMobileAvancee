@@ -1,7 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:tp3/firebase_options.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:tp3/pages/reussipage.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -14,7 +16,6 @@ void main() async {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -37,75 +38,196 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+  final _formKey = GlobalKey<FormState>();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _confirmPasswordController = TextEditingController();
+  String _errorMessage = "";
+  bool _isLoading = false;
 
-  void _incrementCounter() {
-    final db = FirebaseFirestore.instance;
-    // Create a new user with a first and last name
-    final user = <String, dynamic>{
-      "first": "Ada",
-      "last": "Lovelace",
-      "born": 1815
-    };
-    db.collection("users").add(user).then((DocumentReference doc) =>
-        print('DocumentSnapshot added with ID: ${doc.id}'));
+  Future<void> _inscription() async {
     setState(() {
-      _counter++;
+      _isLoading = true;
+    });
+
+    // Vérification des champs avant l'inscription
+    if (_emailController.text.isEmpty || _passwordController.text.isEmpty || _confirmPasswordController.text.isEmpty) {
+      setState(() {
+        _errorMessage = "All fields are required.";
+      });
+      setState(() {
+        _isLoading = false;
+      });
+      return;
+    }
+
+    if (_passwordController.text != _confirmPasswordController.text) {
+      setState(() {
+        _errorMessage = "Passwords do not match.";
+      });
+      setState(() {
+        _isLoading = false;
+      });
+      return;
+    }
+
+    if (_passwordController.text.length < 6) {
+      setState(() {
+        _errorMessage = "Password must be at least 6 characters long.";
+      });
+      setState(() {
+        _isLoading = false;
+      });
+      return;
+    }
+
+    try {
+      UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        email: _emailController.text,
+        password: _passwordController.text,
+      );
+
+      final db = FirebaseFirestore.instance;
+      final user = <String, dynamic>{
+        "email": _emailController.text,
+        "uid": userCredential.user?.uid,
+      };
+
+      await db.collection("users").doc(userCredential.user?.uid).set(user);
+      print('Utilisateur inscrit avec succès ! UID: ${userCredential.user?.uid}');
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => Reussipage()),
+      );
+
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'email-already-in-use') {
+        setState(() {
+          _errorMessage = "The email is already in use.";
+        });
+      } else if (e.code == 'weak-password') {
+        setState(() {
+          _errorMessage = "The password is too weak.";
+        });
+      } else if (e.code == 'invalid-email') {
+        setState(() {
+          _errorMessage = "The email address is not valid.";
+        });
+      } else {
+        setState(() {
+          _errorMessage = "An unexpected error occurred. Please try again.";
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = "An error occurred. Please try again.";
+      });
+    }
+
+    setState(() {
+      _isLoading = false;
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
     return Scaffold(
       appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
         title: Text(widget.title),
       ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text(
-              'You have pushed the button this many times:',
+      body: Stack(
+        children: [
+          SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Form(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Email input
+                    TextFormField(
+                      controller: _emailController,
+                      decoration: InputDecoration(labelText: "Email"),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return "Please enter your email";
+                        }
+                        return null;
+                      },
+                    ),
+                    // Password input
+                    TextFormField(
+                      controller: _passwordController,
+                      decoration: InputDecoration(labelText: "Password"),
+                      obscureText: true,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return "Please enter a password";
+                        }
+                        return null;
+                      },
+                    ),
+                    // Confirm password input
+                    TextFormField(
+                      controller: _confirmPasswordController,
+                      decoration: InputDecoration(labelText: "Confirm Password"),
+                      obscureText: true,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return "Please confirm your password";
+                        }
+                        if (value != _passwordController.text) {
+                          return "Passwords do not match";
+                        }
+                        return null;
+                      },
+                    ),
+                    if (_errorMessage.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 10),
+                        child: Text(
+                          _errorMessage,
+                          style: TextStyle(color: Colors.red),
+                        ),
+                      ),
+                    SizedBox(height: 20),
+                    // Sign up button
+                    ElevatedButton(
+                      onPressed: () async {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text("Processing Data...")),
+                        );
+                        await _inscription();
+                      },
+                      child: Text("Sign up"),
+                    ),
+                    ElevatedButton(
+                      child: Text("Already have an account?"),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => Reussipage()),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
             ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
+          ),
+          if (_isLoading)
+            Positioned.fill(
+              child: Container(
+                color: Colors.black.withOpacity(0.5),
+                child: Center(
+                  child: CircularProgressIndicator(),
+                ),
+              ),
             ),
-          ],
-        ),
+        ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
 }
