@@ -1,31 +1,55 @@
-import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:tp3/pages/reussipage.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
+import 'package:tp3/pages/accueil.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
-import '../main.dart';
+import 'connexion.dart';
 
-class Connexion extends StatefulWidget {
-  const Connexion({super.key});
+class Inscription extends StatefulWidget {
+  const Inscription({super.key, required this.title});
+  final String title;
 
   @override
-  State<Connexion> createState() => _ConnexionState();
+  State<Inscription> createState() => _InscriptionState();
 }
 
-class _ConnexionState extends State<Connexion> {
+class _InscriptionState extends State<Inscription> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _confirmPasswordController = TextEditingController();
   String _errorMessage = "";
   bool _isLoading = false;
 
-  Future<void> _connexion() async {
+  Future<void> _inscription() async {
     setState(() {
       _isLoading = true;
     });
 
-    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
+    if (_emailController.text.isEmpty || _passwordController.text.isEmpty || _confirmPasswordController.text.isEmpty) {
       setState(() {
-        _errorMessage = "Both fields are required.";
+        _errorMessage = "All fields are required.";
+      });
+      setState(() {
+        _isLoading = false;
+      });
+      return;
+    }
+
+    if (_passwordController.text != _confirmPasswordController.text) {
+      setState(() {
+        _errorMessage = "Passwords do not match.";
+      });
+      setState(() {
+        _isLoading = false;
+      });
+      return;
+    }
+
+    if (_passwordController.text.length < 6) {
+      setState(() {
+        _errorMessage = "Password must be at least 6 characters long.";
       });
       setState(() {
         _isLoading = false;
@@ -34,24 +58,37 @@ class _ConnexionState extends State<Connexion> {
     }
 
     try {
-      UserCredential userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
+      UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: _emailController.text,
         password: _passwordController.text,
       );
 
-      // On successful login, navigate to the next page (Reussipage, or any other)
+      final db = FirebaseFirestore.instance;
+      final user = <String, dynamic>{
+        "email": _emailController.text,
+        "uid": userCredential.user?.uid,
+      };
+
+      await db.collection("users").doc(userCredential.user?.uid).set(user);
+      print('Utilisateur inscrit avec succès ! UID: ${userCredential.user?.uid}');
+
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => Reussipage()), // Change this page as needed
+        MaterialPageRoute(builder: (context) => Accueil()),
       );
+
     } on FirebaseAuthException catch (e) {
-      if (e.code == 'user-not-found') {
+      if (e.code == 'email-already-in-use') {
         setState(() {
-          _errorMessage = "No user found with that email.";
+          _errorMessage = "The email is already in use.";
         });
-      } else if (e.code == 'wrong-password') {
+      } else if (e.code == 'weak-password') {
         setState(() {
-          _errorMessage = "Incorrect password.";
+          _errorMessage = "The password is too weak.";
+        });
+      } else if (e.code == 'invalid-email') {
+        setState(() {
+          _errorMessage = "The email address is not valid.";
         });
       } else {
         setState(() {
@@ -73,7 +110,7 @@ class _ConnexionState extends State<Connexion> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Login'),
+        title: Text(widget.title),
       ),
       body: Stack(
         children: [
@@ -81,14 +118,13 @@ class _ConnexionState extends State<Connexion> {
             child: Padding(
               padding: const EdgeInsets.all(16.0),
               child: Form(
-                key: _formKey,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     // Email input
                     TextFormField(
                       controller: _emailController,
-                      decoration: const InputDecoration(labelText: "Email"),
+                      decoration: InputDecoration(labelText: "Email"),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
                           return "Please enter your email";
@@ -99,11 +135,26 @@ class _ConnexionState extends State<Connexion> {
                     // Password input
                     TextFormField(
                       controller: _passwordController,
-                      decoration: const InputDecoration(labelText: "Password"),
+                      decoration: InputDecoration(labelText: "Password"),
                       obscureText: true,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
                           return "Please enter a password";
+                        }
+                        return null;
+                      },
+                    ),
+                    // Confirm password input
+                    TextFormField(
+                      controller: _confirmPasswordController,
+                      decoration: InputDecoration(labelText: "Confirm Password"),
+                      obscureText: true,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return "Please confirm your password";
+                        }
+                        if (value != _passwordController.text) {
+                          return "Passwords do not match";
                         }
                         return null;
                       },
@@ -113,28 +164,26 @@ class _ConnexionState extends State<Connexion> {
                         padding: const EdgeInsets.only(top: 10),
                         child: Text(
                           _errorMessage,
-                          style: const TextStyle(color: Colors.red),
+                          style: TextStyle(color: Colors.red),
                         ),
                       ),
-                    const SizedBox(height: 20),
-                    // Login button
+                    SizedBox(height: 20),
+                    // Sign up button
                     ElevatedButton(
                       onPressed: () async {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text("Logging in...")),
+                          SnackBar(content: Text("Processing Data...")),
                         );
-                        await _connexion();
+                        await _inscription();
                       },
-                      child: const Text("Log in"),
+                      child: Text("Sign up"),
                     ),
-                    const SizedBox(height: 20),
-                    // Redirect to registration page if the user doesn't have an account
                     ElevatedButton(
-                      child: const Text("Don't have an account? Sign up"),
+                      child: Text("Already have an account?"),
                       onPressed: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => const Inscription(title: 'Sign Up')),
+                          MaterialPageRoute(builder: (context) => Connexion()),
                         );
                       },
                     ),
@@ -147,7 +196,7 @@ class _ConnexionState extends State<Connexion> {
             Positioned.fill(
               child: Container(
                 color: Colors.black.withOpacity(0.5),
-                child: const Center(
+                child: Center(
                   child: CircularProgressIndicator(),
                 ),
               ),

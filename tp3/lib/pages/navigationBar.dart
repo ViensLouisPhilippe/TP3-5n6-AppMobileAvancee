@@ -3,7 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:tp3/pages/createTask.dart';
 
 import 'accueil.dart';
-import 'connection.dart';
+import 'connexion.dart';
 
 class NavBar extends StatelessWidget {
   const NavBar({super.key});
