@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:tp3/firebase_options.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:tp3/pages/connection.dart';
 import 'package:tp3/pages/reussipage.dart';
 
 void main() async {
@@ -24,20 +25,20 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: const Inscription(title: 'Flutter Demo Home Page'),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
+class Inscription extends StatefulWidget {
+  const Inscription({super.key, required this.title});
   final String title;
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<Inscription> createState() => _InscriptionState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class _InscriptionState extends State<Inscription> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
@@ -50,7 +51,6 @@ class _MyHomePageState extends State<MyHomePage> {
       _isLoading = true;
     });
 
-    // Vérification des champs avant l'inscription
     if (_emailController.text.isEmpty || _passwordController.text.isEmpty || _confirmPasswordController.text.isEmpty) {
       setState(() {
         _errorMessage = "All fields are required.";
@@ -134,7 +134,6 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: Text(widget.title),
       ),
       body: Stack(
@@ -208,7 +207,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       onPressed: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => Reussipage()),
+                          MaterialPageRoute(builder: (context) => Connexion()),
                         );
                       },
                     ),
