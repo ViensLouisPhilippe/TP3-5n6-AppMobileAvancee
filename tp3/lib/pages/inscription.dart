@@ -70,6 +70,14 @@ class _InscriptionState extends State<Inscription> {
       };
 
       await db.collection("users").doc(userCredential.user?.uid).set(user);
+      await db.collection("users")
+          .doc(userCredential.user?.uid)
+          .collection("Tasks")  // "Tasks" collection for the user
+          .add({
+        'name': 'Sample Task',  // Add some default task or empty fields as needed
+        '': false,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
       print('Utilisateur inscrit avec succès ! UID: ${userCredential.user?.uid}');
 
       Navigator.pushReplacement(
