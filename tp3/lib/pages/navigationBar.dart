@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:tp3/pages/createTask.dart';
 
 import 'accueil.dart';
@@ -100,6 +101,7 @@ class NavBar extends StatelessWidget {
             onTap: () async {
               try {
                 print('Logging out');
+                await GoogleSignIn().signOut();
                 await FirebaseAuth.instance.signOut();
                 Navigator.pushAndRemoveUntil(
                   context,

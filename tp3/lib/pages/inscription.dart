@@ -1,9 +1,9 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:tp3/pages/accueil.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-
+import 'package:google_sign_in/google_sign_in.dart';
 import 'connexion.dart';
 
 class Inscription extends StatefulWidget {
@@ -106,6 +106,65 @@ class _InscriptionState extends State<Inscription> {
     });
   }
 
+  Future<void> _signInWithGoogle() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      /*final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+      if (googleUser == null) {
+        setState(() {
+          _isLoading = false;
+        });
+        return;
+      }
+
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      UserCredential userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
+
+      final db = FirebaseFirestore.instance;
+      final user = <String, dynamic>{
+        "email": userCredential.user?.email,
+        "uid": userCredential.user?.uid,
+      };
+
+      await db.collection("users").doc(userCredential.user?.uid).set(user, SetOptions(merge: true));*/
+
+      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+
+      // Obtain the auth details from the request
+      final GoogleSignInAuthentication? googleAuth = await googleUser?.authentication;
+
+      // Create a new credential
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth?.accessToken,
+        idToken: googleAuth?.idToken,
+      );
+
+      // Once signed in, return the UserCredential
+      await FirebaseAuth.instance.signInWithCredential(credential);
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => Accueil()),
+      );
+    } catch (e) {
+      setState(() {
+        _errorMessage = "An error occurred during Google Sign-In. Please try again.";
+      });
+    }
+
+    setState(() {
+      _isLoading = false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -121,65 +180,39 @@ class _InscriptionState extends State<Inscription> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Email input
                     TextFormField(
                       controller: _emailController,
-                      decoration: InputDecoration(labelText: "Email"),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return "Please enter your email";
-                        }
-                        return null;
-                      },
+                      decoration: const InputDecoration(labelText: "Email"),
                     ),
-                    // Password input
                     TextFormField(
                       controller: _passwordController,
-                      decoration: InputDecoration(labelText: "Password"),
+                      decoration: const InputDecoration(labelText: "Password"),
                       obscureText: true,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return "Please enter a password";
-                        }
-                        return null;
-                      },
                     ),
-                    // Confirm password input
                     TextFormField(
                       controller: _confirmPasswordController,
-                      decoration: InputDecoration(labelText: "Confirm Password"),
+                      decoration: const InputDecoration(labelText: "Confirm Password"),
                       obscureText: true,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return "Please confirm your password";
-                        }
-                        if (value != _passwordController.text) {
-                          return "Passwords do not match";
-                        }
-                        return null;
-                      },
                     ),
                     if (_errorMessage.isNotEmpty)
                       Padding(
                         padding: const EdgeInsets.only(top: 10),
                         child: Text(
                           _errorMessage,
-                          style: TextStyle(color: Colors.red),
+                          style: const TextStyle(color: Colors.red),
                         ),
                       ),
-                    SizedBox(height: 20),
-                    // Sign up button
+                    const SizedBox(height: 20),
                     ElevatedButton(
-                      onPressed: () async {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text("Processing Data...")),
-                        );
-                        await _inscription();
-                      },
-                      child: Text("Sign up"),
+                      onPressed: _inscription,
+                      child: const Text("Sign up"),
                     ),
                     ElevatedButton(
-                      child: Text("Already have an account?"),
+                      onPressed: _signInWithGoogle,
+                      child: const Text("Sign in with Google"),
+                    ),
+                    ElevatedButton(
+                      child: const Text("Already have an account?"),
                       onPressed: () {
                         Navigator.push(
                           context,
@@ -196,7 +229,7 @@ class _InscriptionState extends State<Inscription> {
             Positioned.fill(
               child: Container(
                 color: Colors.black.withOpacity(0.5),
-                child: Center(
+                child: const Center(
                   child: CircularProgressIndicator(),
                 ),
               ),

@@ -22,7 +22,7 @@ class _CreateState extends State<Create> {
     final pickedDate = await showDatePicker(
       context: context,
       initialDate: DateTime.now(),
-      firstDate: DateTime(2000),
+      firstDate: DateTime.now(),
       lastDate: DateTime(2101),
     );
     if (pickedDate != null && pickedDate != _dueDate) {
@@ -32,10 +32,47 @@ class _CreateState extends State<Create> {
     }
   }
 
+  Future<bool> _isTaskNameDuplicate(String trimmedName) async {
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+
+    if (userId == null) {
+      return false;
+    }
+
+    final querySnapshot = await FirebaseFirestore.instance
+        .collection("users")
+        .doc(userId)
+        .collection("Tasks")
+        .where("name", isEqualTo: trimmedName)
+        .get();
+
+    return querySnapshot.docs.isNotEmpty;
+  }
+
   Future<void> _submitTask() async {
-    if (!_formKey.currentState!.validate() || _dueDate == null) {
+    final trimmedName = _nameController.text.trim();
+
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    if (trimmedName.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("non valide")),
+        const SnackBar(content: Text("Task name cannot be empty or whitespace only.")),
+      );
+      return;
+    }
+
+    if (_dueDate == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please select a due date.")),
+      );
+      return;
+    }
+
+    if (_dueDate!.isBefore(DateTime.now())) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("The due date must be in the future.")),
       );
       return;
     }
@@ -51,20 +88,28 @@ class _CreateState extends State<Create> {
         throw Exception("User not logged in");
       }
 
+      final isDuplicate = await _isTaskNameDuplicate(trimmedName);
+      if (isDuplicate) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("A task with this name already exists.")),
+        );
+        return;
+      }
+
       // Ajouter la tâche à Firebase
       await FirebaseFirestore.instance
           .collection("users")
           .doc(userId)
           .collection("Tasks")
           .add({
-        "name": _nameController.text,
+        "name": trimmedName,
         "deadline": _dueDate!.toIso8601String(),
-        "progres": 0,
-        "timeSpent":0
+        "progress": 0,
+        "timeSpent": 0,
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("task added")),
+        const SnackBar(content: Text("Task successfully added!")),
       );
 
       Navigator.pushReplacement(
@@ -73,7 +118,7 @@ class _CreateState extends State<Create> {
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("${"error while adding task"}: $e")),
+        SnackBar(content: Text("Error while adding task: $e")),
       );
     } finally {
       setState(() {
@@ -87,7 +132,7 @@ class _CreateState extends State<Create> {
     return Scaffold(
       drawer: const NavBar(),
       appBar: AppBar(
-        title: Text("Create task"),
+        title: const Text("Create task"),
       ),
       body: Stack(
         children: [
@@ -100,12 +145,12 @@ class _CreateState extends State<Create> {
                 children: [
                   TextFormField(
                     controller: _nameController,
-                    decoration: InputDecoration(
-                      labelText: "task name",
+                    decoration: const InputDecoration(
+                      labelText: "Task name",
                     ),
                     validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return "empty value";
+                      if (value == null || value.trim().isEmpty) {
+                        return "Task name cannot be empty.";
                       }
                       return null;
                     },
@@ -113,21 +158,21 @@ class _CreateState extends State<Create> {
                   const SizedBox(height: 20),
                   Text(
                     _dueDate == null
-                        ? "select due date"
-                        : '${"date"}: ${DateFormat('yyyy-MM-dd').format(_dueDate!)}',
+                        ? "Select a due date"
+                        : 'Due Date: ${DateFormat('yyyy-MM-dd').format(_dueDate!)}',
                   ),
                   const SizedBox(height: 10),
                   ElevatedButton(
                     onPressed: _selectDueDate,
-                    child: Text("pick date"),
+                    child: const Text("Pick Date"),
                   ),
                   const SizedBox(height: 20),
                   OutlinedButton(
                     onPressed: _submitTask,
-                    child: Text("add task"),
+                    child: const Text("Add Task"),
                   ),
                   ElevatedButton(
-                    child: Text("go back"),
+                    child: const Text("Go Back"),
                     onPressed: () {
                       Navigator.pop(context);
                     },
