@@ -44,7 +44,7 @@ class _ConsultationState extends State<Consultation> {
       if (taskSnapshot.exists) {
         setState(() {
           task = taskSnapshot;
-          _currentSliderValue = task!["percentageDone"].toDouble();
+          _currentSliderValue = task!["progres"].toDouble();
           isLoading = false;
         });
       } else {
@@ -206,7 +206,12 @@ class _ConsultationState extends State<Consultation> {
                 ElevatedButton(
                   child: Text("go back"),
                   onPressed: () {
-                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => Accueil(),
+                      ),
+                    );
                   },
                 ),
               ],
