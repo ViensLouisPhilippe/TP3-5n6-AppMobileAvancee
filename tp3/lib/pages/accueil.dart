@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import '../task.dart';
+import 'consultation.dart';
 import 'createTask.dart';
 import 'navigationBar.dart';
 
@@ -170,19 +171,19 @@ class _AccueilState extends State<Accueil> {
           return ListTile(
             title: Text(task.name),
             subtitle: Text(
-              '${"progress"}: ${task.progres}% | ${"date due"}: ${task.timeSpent}%',
+              '${"progres"}: ${task.progres}% | ${"date due"}: ${task.timeSpent}%',
             ),
-            trailing: Text(DateFormat('yyyy-MM-dd').format(task.deadline)),
+            trailing: Text(task.deadline),
 
             contentPadding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
-            // onTap: () {
-            //   Navigator.push(
-            //     context,
-            //     MaterialPageRoute(
-            //       //builder: (context) => Consultation(id: task.id,),
-            //     ),
-            //   );
-            // },
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => Consultation(taskId: task.id,),
+                ),
+              );
+            },
 
           );
 

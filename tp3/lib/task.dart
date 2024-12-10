@@ -4,10 +4,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class Task{
   String id = "";
   String name = "";
-  DateTime timeSpent = DateTime.now();
-  DateTime deadline = DateTime.now();
+  int timeSpent = 0;
+  String deadline = "";
   int progres = 0;
-  String photoUrl = "";
   Task();
 
   Map<String, dynamic> toFirestore() {
@@ -15,8 +14,7 @@ class Task{
       "name": name,
       "deadline": deadline,
       "progres": progres,
-      "timeSpent":timeSpent,
-      "photoUrl": photoUrl
+      "timeSpent":timeSpent
     };
   }
 
@@ -28,9 +26,8 @@ class Task{
     resultat.id = snapshot.id;
     resultat.name  = data?["name"];
     resultat.deadline = data?["deadline"];
-    resultat.progres = data?["progres"].toDate();
+    resultat.progres = data?["progres"];
     resultat.timeSpent = data?["timeSpent"];
-    resultat.photoUrl = data?["photoUrl"];
     return resultat;
   }
 }
