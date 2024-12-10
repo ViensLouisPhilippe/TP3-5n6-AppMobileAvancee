@@ -104,7 +104,7 @@ class _CreateState extends State<Create> {
           .add({
         "name": trimmedName,
         "deadline": _dueDate!.toIso8601String(),
-        "progress": 0,
+        "progres": 0,
         "timeSpent": 0,
       });
 

@@ -138,7 +138,12 @@ class _InscriptionState extends State<Inscription> {
       await db.collection("users").doc(userCredential.user?.uid).set(user, SetOptions(merge: true));*/
 
       final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
-
+      if (googleUser == null) {
+        setState(() {
+          _isLoading = false;
+        });
+        return;
+      }
       // Obtain the auth details from the request
       final GoogleSignInAuthentication? googleAuth = await googleUser?.authentication;
 
@@ -147,7 +152,15 @@ class _InscriptionState extends State<Inscription> {
         accessToken: googleAuth?.accessToken,
         idToken: googleAuth?.idToken,
       );
+      UserCredential userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
 
+      final db = FirebaseFirestore.instance;
+      final user = <String, dynamic>{
+        "email": userCredential.user?.email,
+        "uid": userCredential.user?.uid,
+      };
+
+      await db.collection("users").doc(userCredential.user?.uid).set(user, SetOptions(merge: true));
       // Once signed in, return the UserCredential
       await FirebaseAuth.instance.signInWithCredential(credential);
       Navigator.pushReplacement(
